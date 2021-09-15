@@ -1,12 +1,12 @@
 {
-  "name": "Stripe-Billing",
-  "namespace": "bwp_rc",
-  "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "52.0",
   "packageDirectories": [
     {
       "path": "force-app",
       "default": true
     }
-  ]
+  ],
+  "name": "TestChildRepo",
+  "namespace": "RamyaTestBWP",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "52.0"
 }

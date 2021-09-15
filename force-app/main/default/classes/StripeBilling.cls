@@ -1,19 +1,19 @@
 public with sharing class StripeBilling {
-    public BWP_Processor_Config__c processorConfig;
-    public Boolean isProductsListEmpty                  {get;set;}
-    public Boolean isStripeConnected                    {get;set;}
-    public List<Product> productsList                   {get;set;}
-    public Boolean showProducts 				        {get;set;}
+    public BWP_Processor_Config__c processorConfig      {get; set;}
+    public Boolean isProductsListEmpty                  {get; set;}
+    public Boolean isStripeConnected                    {get; set;}
+    public List<Product> productsList                   {get; set;}
+    public Boolean showProducts 				        {get; set;}
     public StripeBilling() {
-        processorConfig = BreadwinnerUtil.processorConfigList().size() > 0 ? BreadwinnerUtil.processorConfigList()[0] : new BWP_Processor_Config__c()
+        processorConfig = BreadwinnerUtil.processorConfigList.size() > 0 ? BreadwinnerUtil.processorConfigList[0] : new BWP_Processor_Config__c();
         productsList = new List<Product>();
-        isStripeConnected = BreadwinnerUtil.processorConfigList().size() > 0;
+        isStripeConnected = BreadwinnerUtil.processorConfigList.size() > 0;
         isProductsListEmpty = true;
         showProducts = false;
     }
     public void fetchProducts() {
-        processorConfig = BreadwinnerUtil.processorConfigList().size() > 0 ? CryptoUtil.decryptSecrets(BreadwinnerUtil.processorConfigList()[0]) : new BWP_Processor_Config__c();
-        String endPoint = stripeBaseUrlv1 + '/products?limit=15';
+        processorConfig = BreadwinnerUtil.processorConfigList.size() > 0 ? CryptoUtil.decryptSecrets(BreadwinnerUtil.processorConfigList[0]) : new BWP_Processor_Config__c();
+        String endPoint = Processor_Stripe.stripeBaseUrlv1 + '/products?limit=15';
         HttpRequest req = new HttpRequest();
         req.setEndpoint(endPoint);
         req.setHeader('Authorization', 'Bearer ' + processorConfig.Access_Token__c);
@@ -36,7 +36,6 @@ public with sharing class StripeBilling {
                 ProductsResponse responseData = (ProductsResponse) parser.readValueAs(ProductsResponse.class);
                 for(Product c : responseData.data) {
                     c.paymentDate = DateTime.newInstance((long)(c.created) * 1000);
-                    c.amount = c.amount/100;
                 }
                 productsList = responseData.data;
                 if(responseData.data.size()>0) {
@@ -67,6 +66,7 @@ public with sharing class StripeBilling {
         public String active                    {get; set;}
         public String description               {get; set;}
         public String type                      {get; set;}
-        public Long created                     {get; set;} 
+        public Datetime paymentDate             {get;set;}
+        public Long created                     {get; set;}
     }
 }
