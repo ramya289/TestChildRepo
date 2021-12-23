@@ -9,7 +9,7 @@ public with sharing class BreadwinnerBilling {
     public BreadwinnerBilling() {
         stripeAppConfigList = new List<BreadwinnerUtil.AppConfig>();
         for(BWP_Processor_Config__c appC : BreadwinnerUtil.processorConfigList){
-            if(appC.Payment_Processor_Type__c == 'Stripe')
+            if(appC.Payment_Processor_Type__c == ProcessorUtil.PAT_STRIPE)
                 stripeAppConfigList.add(BreadwinnerUtil.getProcessorConfigWrapper(appC));
         }
         appC = stripeAppConfigList.size() > 0?stripeAppConfigList[0]: new BreadwinnerUtil.AppConfig();
@@ -59,24 +59,13 @@ public with sharing class BreadwinnerBilling {
                 
                 JSONParser parser = JSON.createParser(res.getbody());
                 ProductsResponse responseData = (ProductsResponse) parser.readValueAs(ProductsResponse.class);
-                List<BWP_Product__c> prodsList = new List<BWP_Product__c>();
                 for(Product c : responseData.data) {
-                    BWP_Product__c p = new BWP_Product__c();
-                    p.Name = c.name;
-                    p.Active__c = Boolean.valueof(c.active);
-                    p.Type__c = c.type;
-                    p.Description__c = c.description;
                     c.createdDate = DateTime.newInstance((long)(c.created) * 1000);
                     c.updatedDate = DateTime.newInstance((long)(c.updated) * 1000);
-                    p.Created_Date_in_Processor__c = c.createdDate;
-                    p.Updated_Date_in_Processor__c = c.updatedDate;
-                    p.Processor_Id__c = c.id;
-                    prodsList.add(p);
                 }
                 productsList = responseData.data;
                 System.debug('productsList ::: '+productsList);
-                if(responseData.data.size()>0 && prodsList.size()>0) {
-                    upsert prodsList Processor_Id__c;
+                if(responseData.data.size()>0) {
                     isProductsListEmpty = false;
                     showProducts = true;
                 } else {
@@ -94,7 +83,6 @@ public with sharing class BreadwinnerBilling {
         public List <Product> data         {get;set;}
     }
     public class Product {
-        public String id                        {get; set;}
         public String name                      {get; set;}
         public String active                    {get; set;}
         public String description               {get; set;}
