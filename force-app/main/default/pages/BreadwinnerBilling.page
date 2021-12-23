@@ -1,0 +1,307 @@
+<apex:page sidebar="false" lightningStylesheets="true" controller="BreadwinnerBilling">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <meta charset="utf-8" />
+            <apex:slds />
+            <script src="{!URLFOR($Resource.Breadwinner_Payments,'Breadwinner_Payments/js/jquery-3.5.1.min.js')}"></script>
+            
+            <script type="text/javascript">
+                j$ = jQuery.noConflict();
+            j$(document).ready(function() { 
+                console.log('Script Loaded');
+                j$('title')[0].innerText='Breadwinner Billing | Setup';
+            });
+            
+            function message() {
+                j$(".infoM6, .infoM4, .infoM3, .infoM2, .infoS1").addClass("slds-notify slds-notify_alert slds-theme_inverse-text  slds-text-align_left slds-text-heading_small slds-m-bottom_small").css( {"font-weight":"500","line-height":"1.4","word-spacing":"1px","justify-content":"left", "background":"rgba(84,105,141,.95)"} );
+                j$(".errorM6, .errorM4, .errorM3, .errorM2, .errorS1").addClass("slds-notify slds-notify_alert slds-theme_error  slds-text-align_left slds-text-heading_small slds-m-bottom_small").css({"font-weight":"500","line-height":"1.4","word-spacing":"1px","justify-content":"left"});
+                j$(".warningM6, .warningM4, .warningM3, .warningM2, .warningS1").addClass("slds-notify slds-notify_alert slds-theme_warning  slds-text-align_left slds-text-heading_small slds-m-bottom_small").css( {"font-weight":"500","line-height":"1.4","word-spacing":"1px","justify-content":"left"}) ;
+                j$(".confirmM6, .confirmM4, .confirmM3, .confirmM2, .confirmS1").addClass("slds-notify slds-notify_alert slds-theme_success slds-text-align_left slds-text-heading_small slds-m-bottom_small").css( {"font-weight":"500","line-height":"1.4","word-spacing":"1px","justify-content":"left"} ) ;
+                
+                j$("div .messageText h4").css( "color", "white");
+                j$("div[class*='warning'] div.messageText h4").css( "color", "black" );
+                j$("table.messageTable td").css({"color" : "white","float": "left"});
+                j$("div[class*='warning'] table.messageTable td").css( "color", "black" );
+            }
+            function reRenderHeaderSVG(){
+                var imageURL = '{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom3')}';
+                var SVG = j$('<svg/>', {
+                   class: 'slds-icon slds-icon-custom-custom3',
+                });
+
+                var SVGUse = j$('<use/>');
+                SVGUse.attr('xlink:href',imageURL);
+                j$('#setupIcon').prepend(SVG.append(SVGUse));
+                j$('#setupIcon' ).html(j$('#setupIcon').html());
+            }
+            </script>
+            <style>
+                .slds-scope .slds-table_bordered {
+                border-top: 1px solid #d8dde6 !important;
+                }
+                
+                .message {
+                background-color: inherit;
+                border-style: none;
+                padding: initial;
+                margin: 4px 0px !important;
+                }
+                
+                table.messageTable td {
+                border-top: 0px !important;
+                }
+                
+                .msgIcon {
+                display: none;
+                }
+                
+                .message .messageText {
+                margin: 0px;
+                }
+                
+                .message .messageText h4 {
+                font-weight: inherit;
+                display: initial;
+                }
+                
+                .slds-scope .slds-table .messageTable td {
+                padding: 1px;
+                }
+                
+                iframe {
+                border: 0px;
+                }
+                
+                .slds-scope a {
+                text-decoration: underline;
+                color: gray;
+                }
+                
+                .slds-scope .slds-table td {
+                white-space: normal;
+                }
+                
+                .slds-table td img {
+                max-width: initial;
+                height: initial;
+                }
+                
+                .slds-scope .slds-spinner_container {
+                position: fixed;
+                z-index: 9999;
+                }
+                
+                table.google-visualization-table-table td:nth-child(4) {
+                word-break: break-word;
+                }
+                
+                table.google-visualization-table-table td:nth-child(5) {
+                white-space: nowrap;
+                }
+                
+                .slds-is-active .slds-nav-vertical__action {
+                background-color: #f0f8fc;
+                border-color: #d8dde6;
+                border-left-color: #005fb2;
+                }
+                
+                .slds-scope .slds-table_bordered {
+                border-top: 0px solid #d8dde6;
+                }
+                
+                .slds-text-body_small {
+                font-size: .75rem;
+                color: #54698d;
+                }
+                
+                .breadwinner-right-content {
+                margin-bottom: 20px !important;
+                }
+                
+                .form_key label {
+                margin-bottom: 0px !important;
+                }
+                
+                input {
+                padding: 7px 10px !important;
+                }
+                
+                .slds-button {
+                line-height: initial !important;
+                }
+                
+                .remoteSitesError {
+                background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.025) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.025) 50%, rgba(0, 0, 0, 0.025) 75%, transparent 75%, transparent);
+                background-size: 64px 64px;
+                background-color: rgb(255, 183, 93);
+                color: rgb(8, 7, 7);
+                padding: 0.5rem;
+                }
+                
+            </style>
+        </head>
+        <body>
+            <apex:form id="form">
+                <apex:actionStatus id="assign-action-status" layout="block">
+                    <apex:facet name="start">
+                        <div class="slds-spinner_container">
+                            <div class="slds-spinner_brand slds-spinner slds-spinner_medium" role="alert">
+                                <span class="slds-assistive-text">Loading</span>
+                                <div class="slds-spinner__dot-a"></div>
+                                <div class="slds-spinner__dot-b"></div>
+                            </div>
+                        </div>
+                    </apex:facet>
+                </apex:actionStatus>
+                
+                <apex:outputPanel id="setupPageContent">
+                    <div class="row slds-grid slds-wrap slds-grid_vertical-stretch" style="flex-wrap: wrap; height: 100%;">
+                        <div class="col-md-2 slds-p-horizontal_x-small slds-size_1-of-1 slds-medium-size_1-of-6 slds-large-size_2-of-12" style="border-right: 1px solid gray; {!IF(!showProducts, 'height: 100vh;' , '')}">
+                            <div class="slds-align_absolute-center slds-m-around_large" >
+                                <apex:image url="{!URLFOR($Resource.Breadwinner_Payments,'Breadwinner_Payments/images/BreadwinnerLogo.png')}" />
+                            </div>
+                            <hr style="margin:0rem;border-top:1px solid gray;" /> 
+                        </div>
+                        <div class="col-md-10 slds-size_1-of-1 slds-medium-size_5-of-6 slds-large-size_10-of-12 slds-m-bottom_large">
+                            <div id="breadwinner-right-content">
+                                <div id="SetupAndConfig-TAB1" class="slds-show" aria-labelledby="Setup">
+                                    <div class="slds-page-header slds-m-bottom_medium" role="banner">
+                                        <div class="slds-media slds-media_center">
+                                            <div class="slds-media__figure" id="setupIcon">
+                                                <span class="slds-icon_container slds-icon-custom-custom3" title="Setup">
+                                                    <svg aria-hidden="true" class="slds-icon">
+                                                        <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom3')}"></use>
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <p class="slds-page-header__title slds-truncate" title="Breadwinner Setup">Setup</p>
+                                                <p class="slds-text-body_small">Breadwinner • Billing </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <apex:outputPanel layout="block" id="msgPannel" styleClass="slds-m-horizontal_small">
+                                        <apex:pageMessages />
+                                        <apex:outputText rendered="{!showRemoteSitesError}" styleClass="slds-text-body_small"> 
+                                            <div class="remoteSitesError">
+                                                <div class="slds-text-body_regular">
+                                                    <span class="slds-icon_container slds-icon-utility-warning slds-m-right_x-small" style="position: absolute;margin: 1rem 0 1rem 0;" >
+                                                        <svg class="slds-icon_small" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                    <apex:outputPanel style="padding-left:2rem">Please add the following remote sites using the instructions&nbsp;<apex:outputLink value="https://help.salesforce.com/articleView?id=configuring_remoteproxy.htm&type=5"  target="_blank" >here</apex:outputLink>.
+                                                        <ol class="slds-list_ordered" style="padding-left:2rem">
+                                                            <li>https://connect.stripe.com</li>
+                                                            <li>https://api.stripe.com</li>
+                                                        </ol>
+                                                    </apex:outputPanel>
+                                                </div>
+                                            </div>
+                                        </apex:outputText>   
+                                    </apex:outputPanel>
+                                    <div class="slds-m-around_small">
+                                        <table class=" slds-table slds-table_bordered slds-max-medium-table_stacked slds-no-row-hover slds-m-top_x-large">
+                                            <tr>
+                                                <td style="width:45%;border-top-color: white;padding: 15px;">
+                                                    <apex:outputPanel layout="block" id="consumerHeaderPanelMO">
+                                                        <div class="slds-text-heading_medium">
+                                                            Connect Breadwinner to Stripe
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td style="width:4%;border-top-color:white;padding:15px;">
+                                                    <div>
+                                                        <apex:outputPanel id="connectionCheck">
+                                                            <apex:image url="{!URLFOR($Resource.Breadwinner_Payments,'Breadwinner_Payments/images/RedCheck.png')}" id="redchk" rendered="{!NOT(isStripeConnected)}" />
+                                                            <apex:image url="{!URLFOR($Resource.Breadwinner_Payments,'Breadwinner_Payments/images/GreenCheck.png')}" id="greenchk" rendered="{!isStripeConnected}" />
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                </td>
+                                                <td style="border-top-color:white;padding:15px;">
+                                                    <div>
+                                                        <apex:outputPanel id="connectionInfoPanel" >
+                                                            <apex:outputPanel rendered="{!NOT(isStripeConnected)}" styleClass="slds-text-heading_small">
+                                                              <div>
+                                                                  <apex:outputText >It seems you haven't connected any Stripe Org, Please connect to a Stripe Org from the Breadwinner Payments Setup page </apex:outputText>
+                                                              </div>
+                                                          </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!isStripeConnected}" styleClass="slds-text-heading_medium slds-p-bottom_x-small">
+                                                                <div class="slds-p-bottom_x-small">
+                                                                    <apex:outputText value="{!if(appC.accountName != NULL, appC.accountName, appC.PaymentProcessorType )} is connected in {!IF(appC.livemode == false, 'Test','Live')} mode" ></apex:outputText>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                </td> 
+                                            </tr>
+                                        </table>
+                                        <apex:outputPanel id="products" rendered="{!isStripeConnected}">
+                                            <table class=" slds-table slds-max-medium-table_stacked slds-no-row-hover slds-m-top_small">
+                                                <tr>
+                                                    <td style="width:12%">
+                                                        <apex:commandButton action="{!fetchProducts}" oncomplete="message();reRenderHeaderSVG();" value="Show Recent Products" styleClass="slds-button slds-button_brand" reRender="products,msgPannel,setupPageContent " status="assign-action-status"/>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <apex:outputPanel rendered="{!!isProductsListEmpty}">
+                                                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-border_left slds-border_right slds-m-top_small" style="max-width:inherit">
+                                                    <thead>
+                                                        <tr class="slds-line-height_reset">
+                                                            <th scope="col" >
+                                                                <div class="slds-truncate" title="Name">Name</div>
+                                                            </th>
+                                                            <th scope="col"  >
+                                                                <div class="slds-truncate" title="Active">Active</div>
+                                                            </th>
+                                                            <th class="" scope="col" >
+                                                                <div class="slds-truncate" title="Type">Type</div>
+                                                            </th>
+                                                            <th class="" scope="col" >
+                                                                <div class="slds-truncate" title="Description">Description</div>
+                                                            </th>
+                                                            <th class="" scope="col" >
+                                                                <div class="slds-truncate" title="Created Date">Created Date</div>
+                                                            </th>
+                                                            <th class="" scope="col" >
+                                                                <div class="slds-truncate" title="Updated Date">Updated Date</div>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <apex:repeat value="{!productsList}" var="c">
+                                                            <tr class="slds-hint-parent">
+                                                                <td data-label="Name">
+                                                                    <div class="slds-truncate" title="Name">{!c.name}</div>
+                                                                </td>
+                                                                <td data-label="Active">
+                                                                    <div class="slds-truncate" title="Active">{!c.active}</div>
+                                                                </td>
+                                                                <td data-label="Type">
+                                                                    <div class="slds-truncate" title="Type">{!(c.type)}</div>
+                                                                </td>
+                                                                <td data-label="Description">
+                                                                    <div class="slds-truncate" title="Description">{!c.description}</div>
+                                                                </td>
+                                                                <td data-label="Created Date">
+                                                                    <div class="slds-truncate" title="Created Date">{!c.createdDate}</div>
+                                                                </td>
+                                                                <td data-label="Updated Date">
+                                                                    <div class="slds-truncate" title="Updated Date">{!c.updatedDate}</div>
+                                                                </td>
+                                                            </tr>
+                                                        </apex:repeat>
+                                                    </tbody>
+                                                </table>
+                                            </apex:outputPanel>
+                                        </apex:outputPanel>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+            </apex:form>
+        </body>
+    </html>
+</apex:page>
