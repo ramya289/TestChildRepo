@@ -4,7 +4,7 @@ public with sharing class Selector_BWP_Product extends QuerySelector {
         get {
             if (FIELD_LIST == null) {
                 // We are getting a strange SecurityUtil.FLSException: Access Denied: DML_READ on BWP_Product__c.LastViewedDate
-                // if we do this FIELD_LIST = BWP_Product__c.SObjectType.getDescribe().fields.getMap().values();
+                // if we do this FIELD_LIST = BWP_Product__c.SObjectType.getDescribe().fields.getMap().values() so hard coding it;
                 FIELD_LIST = new List<Schema.SObjectField>{
                     BWP_Product__c.Id,
                     BWP_Product__c.Name,

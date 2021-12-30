@@ -1,17 +1,18 @@
-public with sharing class BillingHistoricalSyncBatch implements Database.Batchable<BreadwinnerUtil.AppConfig>, Database.AllowsCallouts, Database.Stateful {
-    public List<BreadwinnerUtil.AppConfig> appConfigUpdateList = new List<BreadwinnerUtil.AppConfig>();
-    public List<BreadwinnerUtil.AppConfig> appConfigList = new List<BreadwinnerUtil.AppConfig>();
+public with sharing class BillingHistoricalSyncBatch implements Database.Batchable<BreadwinnerBillingUtil.BillingAppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
+    public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigUpdateList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
+    public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
+    public List<BreadwinnerUtil.AppConfig> appConfig = new List<BreadwinnerUtil.AppConfig>();
     public String runningObjectName;
     Exception exceptionInExecute;
     public Boolean runThisSyncOnly;
     public Integer requestRecordsCount;
     public String errors;
 
-    //Constructor with BreadwinnerUtil.AppConfig input. This input will have updated BreadwinnerUtil.AppConfig data during runtime. It also can be used to run for specific BreadwinnerUtil.AppConfig.
-    public BillingHistoricalSyncBatch(String objectName, List<BreadwinnerUtil.AppConfig> appconfigs) {
+    //Constructor with BreadwinnerBillingUtil.BillingAppConfig input. This input will have updated BreadwinnerBillingUtil.BillingAppConfig data during runtime. It also can be used to run for specific BreadwinnerBillingUtil.BillingAppConfig.
+    public BillingHistoricalSyncBatch(String objectName, List<BreadwinnerBillingUtil.BillingAppConfig> appconfigs) {
         if(BreadwinnerUtil.getBWSetting().Active__c){
-            for(BreadwinnerUtil.AppConfig apC : appconfigs) {
-                if(!apC.needToReconnect && apc.accessToken != NULL) {
+            for(BreadwinnerBillingUtil.BillingAppConfig apC : appconfigs) {
+                if(!apC.appconfig.needToReconnect && apc.appconfig.accessToken != NULL) {
                     appConfigList.add(apC);
                 }
             }
@@ -38,21 +39,26 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
         runThisSyncOnly = false;
     }
     //Start method
-    public Iterable<BreadwinnerUtil.AppConfig> start(Database.Batchablecontext bc) {
+    public Iterable<BreadwinnerBillingUtil.BillingAppConfig> start(Database.Batchablecontext bc) {
         system.debug('start method');
         system.debug('appConfigList-----'+appConfigList);
         system.debug('runningObjectName-----'+runningObjectName);
+        if(!appConfig.isEmpty()){
+            BreadwinnerBillingUtil.BillingAppConfig appC = BreadwinnerBillingUtil.BillingAppConfig();
+            appC.appconfig = appConfig;
+            appConfigList.add(appC);
+        }
         return appConfigList;
     }
-    public void execute(Database.BatchableContext bc, List<BreadwinnerUtil.AppConfig> scope) {
-        BreadwinnerUtil.AppConfig apc = scope[0];
+    public void execute(Database.BatchableContext bc, List<BreadwinnerBillingUtil.BillingAppConfig> scope) {
+        BreadwinnerBillingUtil.BillingAppConfig apc = scope[0];
         requestRecordsCount = 0;
-        apc.currentRunningClassContext = BreadwinnerUtil.CNTX_HIST_SYNC;
+        apc.appconfig.currentRunningClassContext = BreadwinnerUtil.CNTX_HIST_SYNC;
 
         if(runningObjectName.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT)){
             try {
                 Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
-                if(apc.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
                     if(apC.lastProductId != NULL){
                         fetchRequest.starting_after = apC.lastProductId;
                     }
@@ -60,12 +66,12 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
                 }
                 ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchProducts(apc, fetchRequest);
                 if(response.responseJSON != NULL){
-                    if(apc.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
                         processProductResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
             } catch (Exception ex) {
-                System.debug('Exception occurred while fetching products from '+apc.paymentProcessorType+'.'+ex.getStackTraceString()+'See '+ex.getLineNumber()+'\n'+ex.getmessage());
+                System.debug('Exception occurred while fetching products from '+apc.appconfig.paymentProcessorType+'.'+ex.getStackTraceString()+'See '+ex.getLineNumber()+'\n'+ex.getmessage());
                 apc.requireNextProductSyncRun = False;
                 exceptionInExecute = ex;
             }
@@ -73,7 +79,7 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
         else if(runningObjectName.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRICE)){
             try {
                 Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
-                if(apc.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
                     if(apC.lastPriceId != NULL){
                         fetchRequest.starting_after = apC.lastPriceId;
                     }
@@ -81,12 +87,12 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
                 }
                 ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchPrices(apc, fetchRequest);
                 if(response.responseJSON != NULL){
-                    if(apc.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
                         processPriceResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
             } catch (Exception ex) {
-                System.debug('Exception occurred while fetching prices from '+apc.paymentProcessorType+'.'+ex.getStackTraceString()+'See '+ex.getLineNumber()+'\n'+ex.getmessage());
+                System.debug('Exception occurred while fetching prices from '+apc.appconfig.paymentProcessorType+'.'+ex.getStackTraceString()+'See '+ex.getLineNumber()+'\n'+ex.getmessage());
                 apc.requireNextPriceSyncRun = False;
                 exceptionInExecute = ex;
             }
@@ -108,41 +114,41 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
             }
             
             //Lists to separate failed records and app config records for next run.
-            List<BreadwinnerUtil.AppConfig> appConfigNeedToRun = new List<BreadwinnerUtil.AppConfig>();
-            List<BreadwinnerUtil.AppConfig> failedAppConfigs = new List<BreadwinnerUtil.AppConfig>();
+            List<BreadwinnerBillingUtil.BillingAppConfig> appConfigNeedToRun = new List<BreadwinnerBillingUtil.BillingAppConfig>();
+            List<BreadwinnerBillingUtil.BillingAppConfig> failedAppConfigs = new List<BreadwinnerBillingUtil.BillingAppConfig>();
             
             //List to save app config records to database.
             List<BWP_Processor_Config__c> appConfigNeedToUpdate = new List<BWP_Processor_Config__c>();
-            for(BreadwinnerUtil.AppConfig appConfigWrapper : appConfigUpdateList) {
-                Boolean recordExists = ((String.isNotBlank(appConfigWrapper.RecordId) && (appConfigWrapper.RecordId != NULL)) ? (appConfigMap.containsKey(appConfigWrapper.RecordId) ? true : false) : false);
-                BWP_Processor_Config__c appConfigCompleteRecord = recordExists ? appConfigMap.get(appConfigWrapper.RecordId) : new BWP_Processor_Config__c();
+            for(BreadwinnerBillingUtil.BillingAppConfig appConfigWrapper : appConfigUpdateList) {
+                Boolean recordExists = ((String.isNotBlank(appConfigWrapper.appconfig.RecordId) && (appConfigWrapper.appconfig.RecordId != NULL)) ? (appConfigMap.containsKey(appConfigWrapper.appconfig.RecordId) ? true : false) : false);
+                BWP_Processor_Config__c appConfigCompleteRecord = recordExists ? appConfigMap.get(appConfigWrapper.appconfig.RecordId) : new BWP_Processor_Config__c();
                 
                 if(runningObjectName.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT)){
                     System.debug('Product Sync running at '+System.now()+' appConfigWrapper ::: '+appConfigWrapper);
-                    if(appConfigWrapper.requireNextProductSyncRun && !appConfigWrapper.needToReconnect) { //if more records
-                        system.debug('appConfigWrapper---------'+appConfigWrapper.accountname);
+                    if(appConfigWrapper.requireNextProductSyncRun && !appConfigWrapper.appconfig.needToReconnect) { //if more records
+                        system.debug('appConfigWrapper---------'+appConfigWrapper.appconfig.accountname);
                         appConfigNeedToRun.add(appConfigWrapper);
-                    } else if(appConfigWrapper.requireNextProductSyncRun && appConfigWrapper.needToReconnect) { // Failed records
+                    } else if(appConfigWrapper.requireNextProductSyncRun && appConfigWrapper.appconfig.needToReconnect) { // Failed records
                         failedAppConfigs.add(appConfigWrapper);
                     } else {
-                        APICallHandler.userInteractionLogPush(TRUE, 'Historical Sync', 'FINISHED' , 'Object Name: Product, Syncing Processor: '+appConfigWrapper.paymentProcessorType+' ('+appConfigWrapper.accountName+'), CurrentPage Parsed Records: '+requestRecordsCount);
+                        APICallHandler.userInteractionLogPush(TRUE, 'Historical Sync', 'FINISHED' , 'Object Name: Product, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), CurrentPage Parsed Records: '+requestRecordsCount);
                     }
                     appConfigCompleteRecord.Historical_Product_Sync_Last_Run__c = System.now();
-                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.needToReconnect;
+                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.appconfig.needToReconnect;
                     appConfigNeedToUpdate.add(appConfigCompleteRecord);
                 }
                 if(runningObjectName.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRICE)){
                     System.debug('Price Sync running at '+System.now());
-                    if(appConfigWrapper.requireNextPriceSyncRun && !appConfigWrapper.needToReconnect) { //if more records
-                        system.debug('appConfigWrapper---------'+appConfigWrapper.accountname);
+                    if(appConfigWrapper.requireNextPriceSyncRun && !appConfigWrapper.appconfig.needToReconnect) { //if more records
+                        system.debug('appConfigWrapper---------'+appConfigWrapper.appconfig.accountname);
                         appConfigNeedToRun.add(appConfigWrapper);
-                    } else if(appConfigWrapper.requireNextPriceSyncRun && appConfigWrapper.needToReconnect) { // Failed records
+                    } else if(appConfigWrapper.requireNextPriceSyncRun && appConfigWrapper.appconfig.needToReconnect) { // Failed records
                         failedAppConfigs.add(appConfigWrapper);
                     } else {
-                        APICallHandler.userInteractionLogPush(TRUE, 'Historical Sync', 'FINISHED' , 'Object Name: Price, Syncing Processor: '+appConfigWrapper.paymentProcessorType+' ('+appConfigWrapper.accountName+'), CurrentPage Parsed Records: '+requestRecordsCount);
+                        APICallHandler.userInteractionLogPush(TRUE, 'Historical Sync', 'FINISHED' , 'Object Name: Price, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), CurrentPage Parsed Records: '+requestRecordsCount);
                     }
                     appConfigCompleteRecord.Historical_Price_Sync_Last_Run__c = System.now();
-                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.needToReconnect;
+                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.appconfig.needToReconnect;
                     appConfigNeedToUpdate.add(appConfigCompleteRecord);
                 }
             }
@@ -167,7 +173,12 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
         }
     }
 
-    public static void processProductResponse_Stripe(ProcessorUtil.ResponseObject response, BreadwinnerUtil.AppConfig apc, Integer requestRecordsCount){
+    /* Schedulable - execute */
+    public void execute(SchedulableContext sc) {
+        //TODO Billing Weekly Sync schedule
+    }
+
+    public static void processProductResponse_Stripe(ProcessorUtil.ResponseObject response, BreadwinnerBillingUtil.BillingAppConfig apc, Integer requestRecordsCount){
         Map<String, Product.StripeProduct> stripeProductMapById = new Map<String, Product.StripeProduct>();
         Map<String, Object> processorTypeToRecordsMap = new Map<String, Object>();
         String responseJSON = (String) response.responseJSON;
@@ -190,7 +201,7 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
                 Processor_Billing_Stripe.syncProducts(stripeProductMapById, apC);
         }
     }
-    public static void processPriceResponse_Stripe(ProcessorUtil.ResponseObject response, BreadwinnerUtil.AppConfig apc, Integer requestRecordsCount){
+    public static void processPriceResponse_Stripe(ProcessorUtil.ResponseObject response, BreadwinnerBillingUtil.BillingAppConfig apc, Integer requestRecordsCount){
         Map<String, Product.StripePrice> stripePriceMapById = new Map<String, Product.StripePrice>();
         Map<String, Object> processorTypeToRecordsMap = new Map<String, Object>();
         String responseJSON = (String) response.responseJSON;

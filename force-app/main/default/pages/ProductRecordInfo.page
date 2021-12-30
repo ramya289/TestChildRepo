@@ -143,9 +143,9 @@
                                     <div class="slds-col slds-has-flexi-truncate">
                                         <div class="slds-media slds-media_center">
                                             <div class="slds-media__figure">
-                                                <span class="slds-icon_container slds-icon-custom-custom41">
+                                                <span class="slds-icon_container slds-icon-standard-product">
                                                     <svg class="slds-icon slds-page-header__icon" aria-hidden="true">
-                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom41')}" />
+                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/standard-sprite/svg/symbols.svg#product')}" />
                                                     </svg>
                                                     <span class="slds-assistive-text">{!config.Payment_Processor_Type__c} Product</span>
                                                 </span>
@@ -233,9 +233,9 @@
                                 <apex:outputPanel layout="block" styleClass="slds-m-top_medium slds-m-horizontal_medium">
                                     <div class="slds-media slds-media_center slds-has-flexi-truncate slds-m-bottom_x-small">
                                         <div class="slds-media__figure">
-                                            <span class="slds-icon_container slds-icon-custom-custom16" title="Prices">
+                                            <span class="slds-icon_container slds-icon-custom-custom41" title="Prices">
                                                 <svg class="slds-icon slds-icon_medium" aria-hidden="true">
-                                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom16')}" />
+                                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom41')}" />
                                                 </svg>
                                                 <span class="slds-assistive-text">Prices</span>
                                             </span>

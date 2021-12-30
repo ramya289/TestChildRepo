@@ -2,7 +2,7 @@ public with sharing class Processor_Billing_Stripe {
     private static Selector_BWP_Product selectorProduct = new Selector_BWP_Product();
     private static Selector_BWP_Price selectorPrice = new Selector_BWP_Price();
     
-    public static ProcessorUtil.ResponseObject fetchProducts(BreadwinnerUtil.AppConfig apcWrapper, Processor_Stripe.FetchRequest request) {
+    public static ProcessorUtil.ResponseObject fetchProducts(BreadwinnerBillingUtil.BillingAppConfig apcWrapper, Processor_Stripe.FetchRequest request) {
         ProcessorUtil.ResponseObject response = new ProcessorUtil.ResponseObject();
         response.errors = new List<ProcessorUtil.Error>();
         Processor_Stripe.FetchRequest filters = request;
@@ -21,7 +21,7 @@ public with sharing class Processor_Billing_Stripe {
         if (String.isNotBlank(filters.createdGreaterThanOrEqual)) {
             endPoint += '&created[gte]=' + (DateTime.valueOf(filters.createdGreaterThanOrEqual).getTime()) / 1000;
         }
-        HttpResponse res = APICallHandler.getList(apcWrapper, 'GET', endPoint, '');
+        HttpResponse res = APICallHandler.getList(apcWrapper.appconfig, 'GET', endPoint, '');
         response.status = String.valueOf(res.getStatusCode());
 
         if (res.getStatusCode() == 200) {
@@ -31,9 +31,9 @@ public with sharing class Processor_Billing_Stripe {
             response.responseJSON = JSON.serializePretty(fetchResponse);
 
         } else {
-            apcWrapper.needToReconnect = true;
-            String Action_Type = ProcessorUtil.getLogAction(apcWrapper.currentRunningClassContext, 'Fetching Products');
-            APICallHandler.userInteractionLogPush(true, Action_Type, 'ERROR' , 'Response for Processor Org Name('+apcWrapper.accountName+'): Status Code: '+res.getStatusCode()+' Response Body: '+res.getBody() );
+            apcWrapper.appconfig.needToReconnect = true;
+            String Action_Type = ProcessorUtil.getLogAction(apcWrapper.appconfig.currentRunningClassContext, 'Fetching Products');
+            APICallHandler.userInteractionLogPush(true, Action_Type, 'ERROR' , 'Response for Processor Org Name('+apcWrapper.appconfig.accountName+'): Status Code: '+res.getStatusCode()+' Response Body: '+res.getBody() );
 
             Map<String, Object> responseFromStripe = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             Map<String, Object> error = (Map<String, Object>)responseFromStripe.get('error');
@@ -43,7 +43,7 @@ public with sharing class Processor_Billing_Stripe {
 
         return response;
     }
-    public static ProcessorUtil.ResponseObject fetchPrices(BreadwinnerUtil.AppConfig apcWrapper, Processor_Stripe.FetchRequest request) {
+    public static ProcessorUtil.ResponseObject fetchPrices(BreadwinnerBillingUtil.BillingAppConfig apcWrapper, Processor_Stripe.FetchRequest request) {
         ProcessorUtil.ResponseObject response = new ProcessorUtil.ResponseObject();
         response.errors = new List<ProcessorUtil.Error>();
         Processor_Stripe.FetchRequest filters = request;
@@ -62,7 +62,7 @@ public with sharing class Processor_Billing_Stripe {
         if (String.isNotBlank(filters.createdGreaterThanOrEqual)) {
             endPoint += '&created[gte]=' + (DateTime.valueOf(filters.createdGreaterThanOrEqual).getTime()) / 1000;
         }
-        HttpResponse res = APICallHandler.getList(apcWrapper, 'GET', endPoint, '');
+        HttpResponse res = APICallHandler.getList(apcWrapper.appconfig, 'GET', endPoint, '');
         response.status = String.valueOf(res.getStatusCode());
 
         if (res.getStatusCode() == 200) {
@@ -72,10 +72,10 @@ public with sharing class Processor_Billing_Stripe {
             response.responseJSON = JSON.serializePretty(fetchResponse);
 
         } else {
-            apcWrapper.needToReconnect = true;
+            apcWrapper.appconfig.needToReconnect = true;
             apcWrapper.requireNextProductSyncRun = false;
-            String Action_Type = ProcessorUtil.getLogAction(apcWrapper.currentRunningClassContext, 'Fetching Prices');
-            APICallHandler.userInteractionLogPush(true, Action_Type, 'ERROR' , 'Response for Processor Org Name('+apcWrapper.accountName+'): Status Code: '+res.getStatusCode()+' Response Body: '+res.getBody() );
+            String Action_Type = ProcessorUtil.getLogAction(apcWrapper.appconfig.currentRunningClassContext, 'Fetching Prices');
+            APICallHandler.userInteractionLogPush(true, Action_Type, 'ERROR' , 'Response for Processor Org Name('+apcWrapper.appconfig.accountName+'): Status Code: '+res.getStatusCode()+' Response Body: '+res.getBody() );
 
             Map<String, Object> responseFromStripe = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             Map<String, Object> error = (Map<String, Object>)responseFromStripe.get('error');
@@ -155,7 +155,7 @@ public with sharing class Processor_Billing_Stripe {
         }
         return response;
     }
-    public static void syncProducts(Map<String, Product.StripeProduct> stripeProductMapById, BreadwinnerUtil.AppConfig apc){
+    public static void syncProducts(Map<String, Product.StripeProduct> stripeProductMapById, BreadwinnerBillingUtil.BillingAppConfig apc){
         Map<String, BWP_Product__c> upsertMapByRefId = new Map<String, BWP_Product__c>();
         Map<String, BWP_Product__c> existingSFProductsMap = new Map<String,BWP_Product__c>();
         try {
@@ -179,7 +179,7 @@ public with sharing class Processor_Billing_Stripe {
             APICallHandler.userInteractionLogPush(true, 'Product Sync', 'ERROR' , 'Products Sync failed for while syncing. \n' +ex.getMessage());
         }
     }
-    public static void syncPrices(Map<String, Product.StripePrice> stripePriceMapById, BreadwinnerUtil.AppConfig apc){
+    public static void syncPrices(Map<String, Product.StripePrice> stripePriceMapById, BreadwinnerBillingUtil.BillingAppConfig apc){
         Map<String, BWP_Price__c> upsertMapByRefId = new Map<String, BWP_Price__c>();
         Map<String, BWP_Price__c> existingSFProductsMap = new Map<String,BWP_Price__c>();
         try {
@@ -216,28 +216,29 @@ public with sharing class Processor_Billing_Stripe {
             APICallHandler.userInteractionLogPush(true, 'Price Sync', 'ERROR' , 'Prices Sync failed for while syncing. \n' +ex.getMessage());
         }
     }
-    private static BWP_Product__c constructStripeProduct(BWP_Product__c productSf, Product.StripeProduct pw, BreadwinnerUtil.AppConfig appConfig){
+    private static BWP_Product__c constructStripeProduct(BWP_Product__c productSf, Product.StripeProduct pw, BreadwinnerBillingUtil.BillingAppConfig appC){
         System.debug('PW Wrapper ::: '+pw);
         productSf.Active__c = pw.active;
         if(pw.created != null) productSf.Created_Date_in_Processor__c = DateTime.newInstance((long)(pw.created) * 1000);
-        productSf.Created_Via__c = BreadwinnerUtil.getCreatedViaValue(appConfig.currentRunningClassContext);
+        productSf.Created_Via__c = BreadwinnerUtil.getCreatedViaValue(appC.appconfig.currentRunningClassContext);
         productSf.Description__c = pw.description;
         productSf.Name = pw.name;
+        productSf.Product_Name_Full__c = pw.name;
         productSf.Processor_Id__c = pw.Id;
-        productSf.Processor_Org_Id__c = appConfig.accountId;
+        productSf.Processor_Org_Id__c = appC.appconfig.accountId;
         productSf.Type__c = pw.stripe_type;
         if(pw.updated != null) productSf.Updated_Date_in_Processor__c = DateTime.newInstance((long)(pw.updated) * 1000);
         return productSf;
     }
-    private static BWP_Price__c constructStripePrice(BWP_Price__c priceSf, Product.StripePrice pw, BreadwinnerUtil.AppConfig appConfig){
+    private static BWP_Price__c constructStripePrice(BWP_Price__c priceSf, Product.StripePrice pw, BreadwinnerBillingUtil.BillingAppConfig appC){
         System.debug('PW Wrapper :::: '+pw);
         priceSf.Processor_Id__c = pw.Id;
         priceSf.Active__c = pw.active;
         if(pw.created != null) priceSf.Created_Date_in_Processor__c = DateTime.newInstance((long)(pw.created) * 1000);
-        priceSf.Created_Via__c = BreadwinnerUtil.getCreatedViaValue(appConfig.currentRunningClassContext);
+        priceSf.Created_Via__c = BreadwinnerUtil.getCreatedViaValue(appC.appconfig.currentRunningClassContext);
         priceSf.Currency__c = pw.stripe_currency;
         priceSf.Processor_Id__c = pw.Id;
-        priceSf.Processor_Org_Id__c = appConfig.accountId;
+        priceSf.Processor_Org_Id__c = appC.appconfig.accountId;
         if(pw.stripe_type != null) priceSf.Type__c = pw.stripe_type;
         if(pw.recurring != NULL){
             priceSf.Recurring_Interval__c = pw.recurring.interval;

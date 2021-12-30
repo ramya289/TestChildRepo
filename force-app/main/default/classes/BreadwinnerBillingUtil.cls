@@ -29,14 +29,14 @@ public with sharing class BreadwinnerBillingUtil {
         set;
     }
 
-    // public static BWP_Processor_Config__c getProcessorConfig(String processorId){
-    //     List<BWP_Processor_Config__c> processorConfig = selectorProcessorConfig.selectByProcessorId(new Set<String>{processorId});
-    //     return processorConfig.size()>0 ? processorConfig[0] : new BWP_Processor_Config__c();
-    // }
-
     public class BillingAppConfig {
-        public BreadwinnerUtil.AppConfig appconfig               {get; set;}
-        public Datetime hourlyProductSyncLastRun            {get;set;}
+        public BreadwinnerUtil.AppConfig appconfig                  {get; set;}
+        public Datetime hourlyProductSyncLastRun                    {get; set;}
+        public Datetime hourlyPriceSyncLastRun                      {get; set;}
+        public String lastProductId                                 {get; set;}
+        public String lastPriceId                                   {get; set;}
+        public Boolean requireNextProductSyncRun                    {get; set;}
+        public Boolean requireNextPriceSyncRun                      {get; set;}
     }
     public static BillingAppConfig getProcessorConfigWrapper(BWP_Processor_Config__c appC) {
         appC = appC != null ? appC : new BWP_Processor_Config__c();
@@ -44,6 +44,9 @@ public with sharing class BreadwinnerBillingUtil {
         try{
             ac.appconfig = BreadwinnerUtil.getProcessorConfigWrapper(appC);
             ac.hourlyProductSyncLastRun = appC.Hourly_Product_Sync_Last_Run__c;
+            ac.hourlyPriceSyncLastRun = appC.Hourly_Price_Sync_Last_Run__c;
+            ac.requireNextProductSyncRun = false;
+            ac.requireNextPriceSyncRun = false;
         }
         catch(Exception ex) {
             System.debug('Error occurred while parsing custom setting:AppConfig. '+ex.getStackTraceString());

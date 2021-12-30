@@ -1,15 +1,15 @@
-public with sharing class BillingHourlySyncBatch implements Database.Batchable<BreadwinnerUtil.AppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
-    public List<BreadwinnerUtil.AppConfig> appConfigUpdateList = new List<BreadwinnerUtil.AppConfig>();
-    public List<BreadwinnerUtil.AppConfig> appConfigList = new List<BreadwinnerUtil.AppConfig>();
+public with sharing class BillingHourlySyncBatch implements Database.Batchable<BreadwinnerBillingUtil.BillingAppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
+    public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigUpdateList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
+    public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
     public String runningObject;
     Exception exceptionInExecute;
     public Integer requestRecordsCount;
     public String errors;
 
-    public BillingHourlySyncBatch(String objectName, List<BreadwinnerUtil.AppConfig> appconfigs) {
+    public BillingHourlySyncBatch(String objectName, List<BreadwinnerBillingUtil.BillingAppConfig> appconfigs) {
         if(BreadwinnerUtil.getBWSetting().Active__c) {
-            for(BreadwinnerUtil.AppConfig apC : appconfigs) {
-                if(!apC.needToReconnect && apc.accessToken != NULL) {
+            for(BreadwinnerBillingUtil.BillingAppConfig apC : appconfigs) {
+                if(!apC.appconfig.needToReconnect && apc.appconfig.accessToken != NULL) {
                     appConfigList.add(apC);
                 }
             }
@@ -35,22 +35,22 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
     }
 
     //Start method
-    public Iterable<BreadwinnerUtil.AppConfig> start(Database.Batchablecontext bc) {
+    public Iterable<BreadwinnerBillingUtil.BillingAppConfig> start(Database.Batchablecontext bc) {
         system.debug('start method');
         system.debug('appConfigs------'+appConfigList);
         return appConfigList;
     }
 
-    public void execute(Database.BatchableContext bc, List<BreadwinnerUtil.AppConfig> scope) {
+    public void execute(Database.BatchableContext bc, List<BreadwinnerBillingUtil.BillingAppConfig> scope) {
         system.debug('execute method-----------------');
-        BreadwinnerUtil.AppConfig apc = scope[0];
+        BreadwinnerBillingUtil.BillingAppConfig apc = scope[0];
         requestRecordsCount = 0;
-        apc.currentRunningClassContext = BreadwinnerUtil.CNTX_HOUR_SYNC;     
+        apc.appconfig.currentRunningClassContext = BreadwinnerUtil.CNTX_HOUR_SYNC;     
         
         if(runningObject == BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT) {
             try {
                 Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
-                if(apc.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
                     DateTime lastHourDateTime = apc.hourlyProductSyncLastRun != null ? apc.hourlyProductSyncLastRun.addMinutes(-20) : System.now().addMinutes(-200);
                     fetchRequest.createdGreaterThanOrEqual = String.valueOf(lastHourDateTime);
                     if(apC.lastProductId != NULL){
@@ -60,7 +60,7 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
                 }
                 ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchProducts(apc, fetchRequest);
                 if(response.responseJSON != NULL){
-                    if(apc.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
                         BillingHistoricalSyncBatch.processProductResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
@@ -72,8 +72,8 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
         } else if(runningObject == BreadwinnerBillingUtil.OBJ_SYNC_PRICE) {
             try {
                 Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
-                if(apc.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
-                    DateTime lastHourDateTime = apc.hourlyProductSyncLastRun != null ? apc.hourlyProductSyncLastRun.addMinutes(-20) : System.now().addMinutes(-200);
+                if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    DateTime lastHourDateTime = apc.hourlyPriceSyncLastRun != null ? apc.hourlyPriceSyncLastRun.addMinutes(-20) : System.now().addMinutes(-200);
                     fetchRequest.createdGreaterThanOrEqual = String.valueOf(lastHourDateTime);
                     if(apC.lastPriceId != NULL){
                         fetchRequest.starting_after = apC.lastPriceId;
@@ -82,7 +82,7 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
                 }
                 ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchPrices(apc, fetchRequest);
                 if(response.responseJSON != NULL){
-                    if(apc.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
                         BillingHistoricalSyncBatch.processPriceResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
@@ -108,42 +108,42 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
             }
             
             //Lists to seperate failed records and app config records for next run.
-            List<BreadwinnerUtil.AppConfig> appConfigNeedToRun = new List<BreadwinnerUtil.AppConfig>();
-            List<BreadwinnerUtil.AppConfig> failedAppConfigs = new List<BreadwinnerUtil.AppConfig>();
+            List<BreadwinnerBillingUtil.BillingAppConfig> appConfigNeedToRun = new List<BreadwinnerBillingUtil.BillingAppConfig>();
+            List<BreadwinnerBillingUtil.BillingAppConfig> failedAppConfigs = new List<BreadwinnerBillingUtil.BillingAppConfig>();
             
             List<BWP_Processor_Config__c> appConfigNeedToUpdate = new List<BWP_Processor_Config__c>(); //List to save app config records to database.
             
-            for(BreadwinnerUtil.AppConfig appConfigWrapper : appConfigUpdateList) {
+            for(BreadwinnerBillingUtil.BillingAppConfig appConfigWrapper : appConfigUpdateList) {
                 Boolean recordExists = 
-                    appConfigWrapper.RecordId != NULL &&
-                    appConfigMap.containsKey(appConfigWrapper.RecordId);
-                BWP_Processor_Config__c appConfigCompleteRecord = recordExists ? appConfigMap.get(appConfigWrapper.RecordId) : new BWP_Processor_Config__c();
+                    appConfigWrapper.appconfig.RecordId != NULL &&
+                    appConfigMap.containsKey(appConfigWrapper.appconfig.RecordId);
+                BWP_Processor_Config__c appConfigCompleteRecord = recordExists ? appConfigMap.get(appConfigWrapper.appconfig.RecordId) : new BWP_Processor_Config__c();
                 
                 if(runningObject.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT)){
                     System.debug('Product Sync running at '+System.now());
-                    if(appConfigWrapper.requireNextProductSyncRun && !appConfigWrapper.needToReconnect) { //if more records
+                    if(appConfigWrapper.requireNextProductSyncRun && !appConfigWrapper.appconfig.needToReconnect) { //if more records
                         appConfigNeedToRun.add(appConfigWrapper);
-                    } else if(appConfigWrapper.requireNextProductSyncRun && appConfigWrapper.needToReconnect) { // Failed records
+                    } else if(appConfigWrapper.requireNextProductSyncRun && appConfigWrapper.appconfig.needToReconnect) { // Failed records
                         failedAppConfigs.add(appConfigWrapper);
                     } else {
-                        APICallHandler.userInteractionLogPush(TRUE, 'Hourly Sync', 'FINISHED' , 'Object Name: Product, Syncing Processor: '+appConfigWrapper.paymentProcessorType+' ('+appConfigWrapper.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Hourly_Product_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
+                        APICallHandler.userInteractionLogPush(TRUE, 'Hourly Sync', 'FINISHED' , 'Object Name: Product, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Hourly_Product_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
                     }
                     appConfigCompleteRecord.Hourly_Product_Sync_Last_Run__c = System.now();
-                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.needToReconnect;
+                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.appconfig.needToReconnect;
                     appConfigNeedToUpdate.add(appConfigCompleteRecord);
                     
                 }else if(runningObject.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRICE)){
                     
-                    if(appConfigWrapper.requireNextPriceSyncRun && !appConfigWrapper.needToReconnect) { //if more records
+                    if(appConfigWrapper.requireNextPriceSyncRun && !appConfigWrapper.appconfig.needToReconnect) { //if more records
                         system.debug('need price sync run');
                         appConfigNeedToRun.add(appConfigWrapper);
-                    } else if(appConfigWrapper.requireNextPriceSyncRun && appConfigWrapper.needToReconnect) { // Failed records
+                    } else if(appConfigWrapper.requireNextPriceSyncRun && appConfigWrapper.appconfig.needToReconnect) { // Failed records
                         failedAppConfigs.add(appConfigWrapper);
                     } else {
-                        APICallHandler.userInteractionLogPush(TRUE, 'Hourly Sync', 'FINISHED' , 'Object Name: Price, Syncing Processor: '+appConfigWrapper.paymentProcessorType+' ('+appConfigWrapper.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Hourly_Price_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
+                        APICallHandler.userInteractionLogPush(TRUE, 'Hourly Sync', 'FINISHED' , 'Object Name: Price, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Hourly_Price_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
                     }
                     appConfigCompleteRecord.Hourly_Price_Sync_Last_Run__c = System.now();
-                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.needToReconnect;
+                    appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.appconfig.needToReconnect;
                     appConfigNeedToUpdate.add(appConfigCompleteRecord);
                 }
             }
