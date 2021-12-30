@@ -1,25 +1,25 @@
 {
-    "name": "Breadwinner-Billing",
-    "namespace": "bw_payments",
+    "name": "TestChildRepo",
+    "namespace": "RamyaTestBWP",
     "sfdcLoginUrl": "https://login.salesforce.com",
     "sourceApiVersion": "52.0",
     "packageDirectories": [
         {
             "path": "force-app",
             "default": true,
-            "package": "Breadwinner Billing",
+            "package": "Test BWP Child Package",
             "versionName": "1.0",
             "versionNumber": "1.0.0.NEXT",
             "dependencies": [
                 {
-                    "package": "Breadwinner Payments@1.8.0-1"
+                    "package": "Test BWP Base Package@1.1.0-2"
                 }
             ]
         }
     ],
     "packageAliases": {
-        "Breadwinner Billing": "0Ho6e000000k9bSCAQ",
-        "Breadwinner Payments@1.8.0-1": "04t6e000002AgrQAAS",
-        "Breadwinner Billing@1.0.0-1": "04t6e000002AgrVAAS"
+        "Test BWP Child Package": "0Ho5g00000000gOCAQ",
+        "Test BWP Base Package@1.1.0-2": "04t5g000000y3PmAAI",
+        "Test BWP Child Package@1.0.0-1": "04t5g000000y3P8AAI"
     }
 }
