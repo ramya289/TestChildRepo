@@ -1,10 +1,11 @@
+@namespaceAccessible
 public with sharing class BillingHistoricalSyncBatch implements Database.Batchable<BreadwinnerBillingUtil.BillingAppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigUpdateList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
-    public List<BreadwinnerUtil.AppConfig> appConfig = new List<BreadwinnerUtil.AppConfig>();
-    public String runningObjectName;
+    @namespaceAccessible public BreadwinnerUtil.AppConfig appConfig = new BreadwinnerUtil.AppConfig();
+    @namespaceAccessible public String runningObjectName;
     Exception exceptionInExecute;
-    public Boolean runThisSyncOnly;
+    @namespaceAccessible public Boolean runThisSyncOnly;
     public Integer requestRecordsCount;
     public String errors;
 
@@ -35,7 +36,9 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
     }
 
     // This constructor can be used to call dynamically from the Payments package
+    @namespaceAccessible
     public BillingHistoricalSyncBatch(){
+        System.debug('Default Constructor');
         runThisSyncOnly = false;
     }
     //Start method
@@ -43,11 +46,6 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
         system.debug('start method');
         system.debug('appConfigList-----'+appConfigList);
         system.debug('runningObjectName-----'+runningObjectName);
-        if(!appConfig.isEmpty()){
-            BreadwinnerBillingUtil.BillingAppConfig appC = BreadwinnerBillingUtil.BillingAppConfig();
-            appC.appconfig = appConfig;
-            appConfigList.add(appC);
-        }
         return appConfigList;
     }
     public void execute(Database.BatchableContext bc, List<BreadwinnerBillingUtil.BillingAppConfig> scope) {
@@ -174,8 +172,48 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
     }
 
     /* Schedulable - execute */
+    @namespaceAccessible
     public void execute(SchedulableContext sc) {
-        //TODO Billing Weekly Sync schedule
+        if(BreadwinnerUtil.isAdministrator()) {
+            if(BreadwinnerUtil.isBreadwinnerActive()) {
+                CronTrigger ct = Schema.sObjectType.CronTrigger.isAccessible() ? [SELECT Id, CronExpression FROM CronTrigger WHERE Id =: sc.getTriggerId() LIMIT 1] : new CronTrigger();
+                if(ct.CronExpression.containsIgnoreCase('BillingHistoricalSync')) {
+                    //start the historical batch
+                    runHistoricalSyncBatch(runningObjectName, runThisSyncOnly, appConfig);
+                }
+                //TODO need to handle weekly sync
+            }
+            else {
+                APICallHandler.userInteractionLogPush(FALSE, 'Historical Scheduler', 'INFO', 'Trial or Subscription Expired');
+            }
+        }
+        else {
+            APICallHandler.userInteractionLogPush(FALSE, 'Historical Scheduler', 'INFO', 'Running user is not an Administrator');
+        }
+    }
+
+     /* This method is used to run historical sync batch */
+     @namespaceAccessible
+     public static void runHistoricalSyncBatch(String syncName, Boolean runThisSyncOnly, BreadwinnerUtil.AppConfig appConfig){
+        String runningSyncName = String.isNotBlank(syncName) ? syncName : BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT;
+        try{
+            if(BreadwinnerUtil.isBreadwinnerAdministrator() && !BreadwinnerUtil.isBatchRunning(BreadwinnerBillingUtil.CNTX_BB_HIST_SYNC)) {
+                BillingHistoricalSyncBatch historicalSync;
+                if(appConfig.accountId != NULL){
+                    List<BreadwinnerBillingUtil.BillingAppConfig> appCList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
+                    BreadwinnerBillingUtil.BillingAppConfig appC = new BreadwinnerBillingUtil.BillingAppConfig();
+                    appC.appconfig = appConfig;
+                    appCList.add(appC);
+                    historicalSync = new BillingHistoricalSyncBatch(runningSyncName, appCList);
+                }
+                else historicalSync = new BillingHistoricalSyncBatch(runningSyncName);
+                historicalSync.runThisSyncOnly = runThisSyncOnly;
+                Database.executeBatch(historicalSync, 1); //At a time only one company should be run. Don't make it other than 1.
+            }
+        }
+        catch(exception e){
+            APICallHandler.userInteractionLogPush(FALSE, 'Historical Sync', 'ERROR' , 'Error occurred while restarting Historical '+runningSyncName+'Sync ' +e);
+        }
     }
 
     public static void processProductResponse_Stripe(ProcessorUtil.ResponseObject response, BreadwinnerBillingUtil.BillingAppConfig apc, Integer requestRecordsCount){

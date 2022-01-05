@@ -236,7 +236,7 @@ public with sharing class Processor_Billing_Stripe {
         priceSf.Active__c = pw.active;
         if(pw.created != null) priceSf.Created_Date_in_Processor__c = DateTime.newInstance((long)(pw.created) * 1000);
         priceSf.Created_Via__c = BreadwinnerUtil.getCreatedViaValue(appC.appconfig.currentRunningClassContext);
-        priceSf.Currency__c = pw.stripe_currency;
+        priceSf.Currency__c = (pw.stripe_currency).toUpperCase();
         priceSf.Processor_Id__c = pw.Id;
         priceSf.Processor_Org_Id__c = appC.appconfig.accountId;
         if(pw.stripe_type != null) priceSf.Type__c = pw.stripe_type;

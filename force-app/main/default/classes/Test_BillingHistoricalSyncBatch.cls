@@ -6,11 +6,9 @@ private class Test_BillingHistoricalSyncBatch {
         Profile prof = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1 ];
         User user = new User(Alias = 'TestUser', Email = 'testuser@testorg.com', EmailEncodingKey = 'UTF-8', LastName = 'Testing', LanguageLocaleKey = 'en_US', LocaleSidKey = 'en_US', ProfileId = prof.Id, TimeZoneSidKey = 'America/Los_Angeles', UserName = uniqueUserName);
         insert user;
-        String adminPSName = 'Breadwinner_Payments_Admin_User';
+        String adminPSName = 'Breadwinner_Payments_Admin_User_Billing';
         List<PermissionSet> pset = [SELECT Id FROM PermissionSet WHERE Name = :adminPSName];
-        List<PermissionSet> pset1 = [SELECT Id FROM PermissionSet WHERE Name = 'Breadwinner_Billing'];
         insert new PermissionSetAssignment(AssigneeId = user.id, PermissionSetId = pset[0].Id);
-        insert new PermissionSetAssignment(AssigneeId = user.id, PermissionSetId = pset1[0].Id);
     }
     @IsTest
     static void stripe_HistoricalSync_When_Success() {

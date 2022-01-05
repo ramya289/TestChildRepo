@@ -1,3 +1,4 @@
+@namespaceAccessible
 public with sharing class BillingHourlySyncBatch implements Database.Batchable<BreadwinnerBillingUtil.BillingAppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigUpdateList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
@@ -30,6 +31,7 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
     }
 
     // This constructor can be used to call dynamically from the Payments package
+    @namespaceAccessible
     public BillingHourlySyncBatch(){
         scheduleBreadwinnerHourlySync(1, true);
     }
@@ -195,6 +197,8 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
             APICallHandler.userInteractionLogPush(false, 'Hourly Sync', 'ERROR' , 'Error occurred while restarting Hourly Sync ' +e);
         }
     }
+    
+    @namespaceAccessible
     public static void scheduleBreadwinnerHourlySync(Integer minutes, Boolean abortExistedJobs) {
         if(BreadwinnerUtil.isBreadwinnerAdministrator()) {
             try {

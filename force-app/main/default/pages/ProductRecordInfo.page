@@ -257,7 +257,7 @@
                                                 <apex:column headerValue="Price #" html-data-label="Price #">
                                                     <apex:outputLink value="/{!URLFOR(price.id)}" target="_blank" rendered="{!NOT(ISNULL(price.id))}">{!price.Name}</apex:outputLink>
                                                 </apex:column>
-                                                <apex:column headerValue="Currency" html-data-label="Currency" styleClass="slds-cell-wrap slds-text-title_caps" value="{!price.Currency__c}" />
+                                                <apex:column headerValue="Currency" html-data-label="Currency" styleClass="slds-cell-wrap" value="{!price.Currency__c}" />
                                                 <apex:column headerValue="Type" html-data-label="Type" styleClass="slds-cell-wrap" value="{!price.Type__c}" />
                                                 <apex:column headerValue="Interval Count" html-data-label="Interval Count" styleClass="slds-cell-wrap slds-text-align_right" headerClass="slds-text-align_right" value="{!price.Recurring_Interval_Count__c}" />
                                                 <apex:column headerValue="Interval" html-data-label="Interval" styleClass="slds-cell-wrap" value="{!price.Recurring_Interval__c}" />

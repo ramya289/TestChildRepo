@@ -21,7 +21,7 @@ public with sharing class BillingRecordInfoExtension {
         recordId = String.escapeSingleQuotes(stdController.getId());
         sObj = recordId.getsobjecttype().newSObject();
         sObjName = recordId.getsobjecttype().getDescribe().getname();
-        config = BreadwinnerBillingUtil.processorConfigList.size() > 0 ? BreadwinnerBillingUtil.processorConfigList[0] : new BWP_Processor_Config__c();
+        config = BreadwinnerUtil.processorConfigList.size() > 0 ? BreadwinnerUtil.processorConfigList[0] : new BWP_Processor_Config__c();
 
         if(showBWLayout){
             QueryBuilder qb;

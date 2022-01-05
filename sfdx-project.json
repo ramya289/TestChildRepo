@@ -8,18 +8,22 @@
             "path": "force-app",
             "default": true,
             "package": "Test BWP Child Package",
-            "versionName": "1.0",
-            "versionNumber": "1.0.0.NEXT",
+            "versionName": "1.1",
+            "versionNumber": "1.1.0.NEXT",
+            "ancestorVersion": "1.0.0.RELEASED",
             "dependencies": [
                 {
-                    "package": "Test BWP Base Package@1.1.0-2"
+                    "package": "Test BWP Base Package@2.1.0-1"
                 }
             ]
         }
     ],
     "packageAliases": {
         "Test BWP Child Package": "0Ho5g00000000gOCAQ",
-        "Test BWP Base Package@1.1.0-2": "04t5g000000y3PmAAI",
-        "Test BWP Child Package@1.0.0-1": "04t5g000000y3P8AAI"
+        "Test BWP Base Package@2.1.0-1": "04t5g000000y3ToAAI",
+        "Test BWP Child Package@1.0.0-1": "04t5g000000y3P8AAI",
+        "Test BWP Child Package@1.1.0-1": "04t5g000000y3SCAAY",
+        "Test BWP Child Package@1.1.0-2": "04t5g000000y3TZAAY",
+        "Test BWP Child Package@1.1.0-3": "04t5g000000y3TtAAI"
     }
 }
