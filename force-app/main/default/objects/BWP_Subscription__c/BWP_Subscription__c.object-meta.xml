@@ -149,34 +149,17 @@
     <enableHistory>false</enableHistory>
     <enableLicensing>false</enableLicensing>
     <enableReports>false</enableReports>
-    <enableSearch>true</enableSearch>
+    <enableSearch>false</enableSearch>
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
     <externalSharingModel>Private</externalSharingModel>
-    <label>BWP Product</label>
+    <label>BWP Subscription</label>
     <nameField>
-        <label>Product Name</label>
+        <label>Subscription Name</label>
         <type>Text</type>
     </nameField>
-    <pluralLabel>BWP Products</pluralLabel>
-    <searchLayouts>
-        <customTabListAdditionalFields>Active__c</customTabListAdditionalFields>
-        <customTabListAdditionalFields>Type__c</customTabListAdditionalFields>
-        <customTabListAdditionalFields>Description__c</customTabListAdditionalFields>
-        <lookupDialogsAdditionalFields>Active__c</lookupDialogsAdditionalFields>
-        <lookupDialogsAdditionalFields>Type__c</lookupDialogsAdditionalFields>
-        <lookupDialogsAdditionalFields>Description__c</lookupDialogsAdditionalFields>
-        <lookupPhoneDialogsAdditionalFields>Active__c</lookupPhoneDialogsAdditionalFields>
-        <lookupPhoneDialogsAdditionalFields>Type__c</lookupPhoneDialogsAdditionalFields>
-        <lookupPhoneDialogsAdditionalFields>Description__c</lookupPhoneDialogsAdditionalFields>
-        <searchFilterFields>NAME</searchFilterFields>
-        <searchFilterFields>Active__c</searchFilterFields>
-        <searchFilterFields>Type__c</searchFilterFields>
-        <searchFilterFields>Description__c</searchFilterFields>
-        <searchResultsAdditionalFields>Active__c</searchResultsAdditionalFields>
-        <searchResultsAdditionalFields>Type__c</searchResultsAdditionalFields>
-        <searchResultsAdditionalFields>Description__c</searchResultsAdditionalFields>
-    </searchLayouts>
+    <pluralLabel>BWP Subscriptions</pluralLabel>
+    <searchLayouts/>
     <sharingModel>ReadWrite</sharingModel>
     <visibility>Public</visibility>
 </CustomObject>

@@ -1,5 +1,5 @@
 @namespaceAccessible
-public with sharing class BillingHourlySyncBatch implements Database.Batchable<BreadwinnerBillingUtil.BillingAppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
+public with sharing class BillingRegularSyncBatch implements Database.Batchable<BreadwinnerBillingUtil.BillingAppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigUpdateList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
     public String runningObject;
@@ -7,7 +7,7 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
     public Integer requestRecordsCount;
     public String errors;
 
-    public BillingHourlySyncBatch(String objectName, List<BreadwinnerBillingUtil.BillingAppConfig> appconfigs) {
+    public BillingRegularSyncBatch(String objectName, List<BreadwinnerBillingUtil.BillingAppConfig> appconfigs) {
         if(BreadwinnerUtil.getBWSetting().Active__c) {
             for(BreadwinnerBillingUtil.BillingAppConfig apC : appconfigs) {
                 if(!apC.appconfig.needToReconnect && apc.appconfig.accessToken != NULL) {
@@ -15,10 +15,10 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
                 }
             }
         }
-        runningObject = String.isNotBlank(objectName) ? objectName : '';
+        runningObject = objectName;
         system.debug('appConfigList----'+appConfigList);
     }
-    public BillingHourlySyncBatch(String objectName) {
+    public BillingRegularSyncBatch(String objectName) {
         if(BreadwinnerUtil.getBWSetting().Active__c) {
             for(BWP_Processor_Config__c config : BreadwinnerBillingUtil.processorConfigList) {
                 if(!config.Need_To_Reconnect__c && config.Access_Token__c != NULL) {
@@ -26,14 +26,14 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
                 }
             }
         } 
-        runningObject = String.isNotBlank(objectName) ? objectName : '';
+        runningObject = objectName;
         system.debug('appConfigList----'+appConfigList);
     }
 
-    // This constructor can be used to call dynamically from the Payments package
+    //Constructor to call dynamically from the Payments package
     @namespaceAccessible
-    public BillingHourlySyncBatch(){
-        scheduleBreadwinnerHourlySync(1, true);
+    public BillingRegularSyncBatch(){
+        //
     }
 
     //Start method
@@ -51,18 +51,17 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
         
         if(runningObject == BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT) {
             try {
-                Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
                 if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
-                    DateTime lastHourDateTime = apc.hourlyProductSyncLastRun != null ? apc.hourlyProductSyncLastRun.addMinutes(-20) : System.now().addMinutes(-200);
+                    Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
+                    DateTime lastHourDateTime = apc.regularProductSyncLastRun != null ? apc.regularProductSyncLastRun.addMinutes(-20) : System.now().addMinutes(-200);
                     fetchRequest.createdGreaterThanOrEqual = String.valueOf(lastHourDateTime);
                     if(apC.lastProductId != NULL){
                         fetchRequest.starting_after = apC.lastProductId;
                     }
+                    //make max limit to 50 to reduce heap size and DML rows issues.
                     fetchRequest.stripe_limit = '50';
-                }
-                ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchProducts(apc, fetchRequest);
-                if(response.responseJSON != NULL){
-                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchProducts(apc, fetchRequest);
+                    if(response.responseJSON != NULL){
                         BillingHistoricalSyncBatch.processProductResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
@@ -73,18 +72,16 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
             }
         } else if(runningObject == BreadwinnerBillingUtil.OBJ_SYNC_PRICE) {
             try {
-                Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
                 if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
-                    DateTime lastHourDateTime = apc.hourlyPriceSyncLastRun != null ? apc.hourlyPriceSyncLastRun.addMinutes(-20) : System.now().addMinutes(-200);
+                    Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
+                    DateTime lastHourDateTime = apc.regularPriceSyncLastRun != null ? apc.regularPriceSyncLastRun.addMinutes(-20) : System.now().addMinutes(-200);
                     fetchRequest.createdGreaterThanOrEqual = String.valueOf(lastHourDateTime);
                     if(apC.lastPriceId != NULL){
                         fetchRequest.starting_after = apC.lastPriceId;
                     }
                     fetchRequest.stripe_limit = '50';
-                }
-                ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchPrices(apc, fetchRequest);
-                if(response.responseJSON != NULL){
-                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchPrices(apc, fetchRequest);
+                    if(response.responseJSON != NULL){
                         BillingHistoricalSyncBatch.processPriceResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
@@ -99,7 +96,7 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
     public void finish(Database.BatchableContext BC) {
         system.debug('finish method--------------');
         if(exceptionInExecute!=NULL){
-            APICallHandler.userInteractionLogPush(TRUE, 'Hourly Sync', 'ERROR' , 'Hourly Sync Exception in execute : ' + exceptionInExecute.getMessage() + ' Stack Trace : ' + exceptionInExecute.getStackTraceString());
+            APICallHandler.userInteractionLogPush(TRUE, 'Regular Sync', 'ERROR' , 'Regular Sync Exception in execute : ' + exceptionInExecute.getMessage() + ' Stack Trace : ' + exceptionInExecute.getStackTraceString());
         }
         if(BreadwinnerUtil.getBWSetting().Active__c && BreadwinnerUtil.isProcessorConnected()) {
             Map<ID,BWP_Processor_Config__c> appConfigMap = new Map<ID,BWP_Processor_Config__c>();
@@ -116,9 +113,7 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
             List<BWP_Processor_Config__c> appConfigNeedToUpdate = new List<BWP_Processor_Config__c>(); //List to save app config records to database.
             
             for(BreadwinnerBillingUtil.BillingAppConfig appConfigWrapper : appConfigUpdateList) {
-                Boolean recordExists = 
-                    appConfigWrapper.appconfig.RecordId != NULL &&
-                    appConfigMap.containsKey(appConfigWrapper.appconfig.RecordId);
+                Boolean recordExists = appConfigMap.containsKey(appConfigWrapper?.appconfig?.RecordId);
                 BWP_Processor_Config__c appConfigCompleteRecord = recordExists ? appConfigMap.get(appConfigWrapper.appconfig.RecordId) : new BWP_Processor_Config__c();
                 
                 if(runningObject.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT)){
@@ -128,9 +123,9 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
                     } else if(appConfigWrapper.requireNextProductSyncRun && appConfigWrapper.appconfig.needToReconnect) { // Failed records
                         failedAppConfigs.add(appConfigWrapper);
                     } else {
-                        APICallHandler.userInteractionLogPush(TRUE, 'Hourly Sync', 'FINISHED' , 'Object Name: Product, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Hourly_Product_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
+                        APICallHandler.userInteractionLogPush(TRUE, 'Regular Sync', 'FINISHED' , 'Object Name: Product, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Regular_Product_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
                     }
-                    appConfigCompleteRecord.Hourly_Product_Sync_Last_Run__c = System.now();
+                    appConfigCompleteRecord.Regular_Product_Sync_Last_Run__c = System.now();
                     appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.appconfig.needToReconnect;
                     appConfigNeedToUpdate.add(appConfigCompleteRecord);
                     
@@ -142,9 +137,9 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
                     } else if(appConfigWrapper.requireNextPriceSyncRun && appConfigWrapper.appconfig.needToReconnect) { // Failed records
                         failedAppConfigs.add(appConfigWrapper);
                     } else {
-                        APICallHandler.userInteractionLogPush(TRUE, 'Hourly Sync', 'FINISHED' , 'Object Name: Price, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Hourly_Price_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
+                        APICallHandler.userInteractionLogPush(TRUE, 'Regular Sync', 'FINISHED' , 'Object Name: Price, Syncing Processor: '+appConfigWrapper.appconfig.paymentProcessorType+' ('+appConfigWrapper.appconfig.accountName+'), Requested LastSyncDateTime: '+appConfigCompleteRecord.Regular_Price_Sync_Last_Run__c+', CurrentPage Parsed Records: '+requestRecordsCount);
                     }
-                    appConfigCompleteRecord.Hourly_Price_Sync_Last_Run__c = System.now();
+                    appConfigCompleteRecord.Regular_Price_Sync_Last_Run__c = System.now();
                     appConfigCompleteRecord.Need_To_Reconnect__c = appConfigWrapper.appconfig.needToReconnect;
                     appConfigNeedToUpdate.add(appConfigCompleteRecord);
                 }
@@ -155,54 +150,53 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
             if(!appConfigNeedToRun.isEmpty()) {
                 system.debug('execute---another');
                 if(!Test.isRunningTest()){
-                    BillingHourlySyncBatch hourlySync = new BillingHourlySyncBatch(runningObject, appConfigNeedToRun);
-                    Database.executeBatch(hourlySync, 1);
+                    BillingRegularSyncBatch regularSync = new BillingRegularSyncBatch(runningObject, appConfigNeedToRun);
+                    Database.executeBatch(regularSync, 1);
                 }
             } else if(appConfigNeedToRun.isEmpty() && appConfigNeedToUpdate.size()>0) {
                 System.debug('No more batches to run. So start Next batch.');
                 if(!BreadwinnerUtil.isBatchRunning(BreadwinnerUtil.CNTX_HOUR_SYNC)) {
                     String getNextSyncObjectName = BreadwinnerBillingUtil.findNextSyncName(runningObject);
                     if(String.isNotBlank(getNextSyncObjectName)) {
-                        Database.executeBatch(new BillingHourlySyncBatch(getNextSyncObjectName), 1);
+                        Database.executeBatch(new BillingRegularSyncBatch(getNextSyncObjectName), 1);
                     } else {
-                        scheduleBreadwinnerHourlySync(15, true);
+                        scheduleBreadwinnerRegularSync(15, true);
                     }
                 }
             }
         }
     }
     /* Schedulable - execute */
+    @namespaceAccessible
     public void execute(SchedulableContext sc) {
         if(BreadwinnerUtil.isAdministrator()) {
             if(BreadwinnerUtil.isBreadwinnerActive()) {
-                runHourlySyncBatch();
+                runRegularSyncBatch();
             }
             else {
-                APICallHandler.userInteractionLogPush(FALSE, 'Hourly Scheduler', 'INFO', 'Trial or Subscription Expired');
+                APICallHandler.userInteractionLogPush(FALSE, 'Regular Scheduler', 'INFO', 'Trial or Subscription Expired');
             }
         }
         else {
-            APICallHandler.userInteractionLogPush(FALSE, 'Hourly Scheduler', 'INFO', 'Running user is not an Administrator');
+            APICallHandler.userInteractionLogPush(FALSE, 'Regular Scheduler', 'INFO', 'Running user is not an Administrator');
         }
     }
-    /* This method is used to run hourly sync batch */
-    public static void runHourlySyncBatch(){
+    /* This method is used to run Regular sync batch */
+    public static void runRegularSyncBatch(){
         try{
             if(BreadwinnerUtil.isBreadwinnerAdministrator() && !BreadwinnerUtil.isBatchRunning(BreadwinnerUtil.CNTX_HOUR_SYNC)) {
-                BillingHourlySyncBatch hourlySync = new BillingHourlySyncBatch(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT);
-                Database.executeBatch(hourlySync, 1); //At a time only one company should be run. Don't make it other than 1.
+                BillingRegularSyncBatch regularSync = new BillingRegularSyncBatch(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT);
+                Database.executeBatch(regularSync, 1); //At a time only one company should be run. Don't make it other than 1.
             }
         }
         catch(Exception e){
-            APICallHandler.userInteractionLogPush(false, 'Hourly Sync', 'ERROR' , 'Error occurred while restarting Hourly Sync ' +e);
+            APICallHandler.userInteractionLogPush(false, 'Regular Sync', 'ERROR' , 'Error occurred while restarting Regular Sync ' +e);
         }
     }
-    
-    @namespaceAccessible
-    public static void scheduleBreadwinnerHourlySync(Integer minutes, Boolean abortExistedJobs) {
+    public static void scheduleBreadwinnerRegularSync(Integer minutes, Boolean abortExistedJobs) {
         if(BreadwinnerUtil.isBreadwinnerAdministrator()) {
             try {
-                List<CronTrigger> existedScheduledJobs = BreadwinnerUtil.getCronTrigger('BreadwinnerBillingHourlySync');
+                List<CronTrigger> existedScheduledJobs = BreadwinnerUtil.getCronTrigger('BreadwinnerBillingRegularSync');
 
                 if(existedScheduledJobs.size()>0 && abortExistedJobs) {
                     for(CronTrigger ct : existedScheduledJobs) {
@@ -212,12 +206,12 @@ public with sharing class BillingHourlySyncBatch implements Database.Batchable<B
                 if(existedScheduledJobs.size() == 0 || abortExistedJobs) {
                     DateTime nextScheduleTime = System.now().addMinutes(minutes);
                     String CronExpression = '0 ' + nextScheduleTime.minute() + ' ' + nextScheduleTime.hour() + ' ' + nextScheduleTime.day() + ' ' + nextScheduleTime.month() + ' ? ' + nextScheduleTime.year() + ' BillingBreadwinnerSync';
-                    BillingHourlySyncBatch hourlySync = new BillingHourlySyncBatch(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT);
-                    System.schedule('BreadwinnerBillingHourlySync' + System.now(), CronExpression, hourlySync);
+                    BillingRegularSyncBatch regularSync = new BillingRegularSyncBatch(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT);
+                    System.schedule('BreadwinnerBillingRegularSync' + System.now(), CronExpression, regularSync);
                 }
             }
             catch(Exception e) {
-                System.debug('Exception occured while scheduling Breadwinner Hourly Sync: ' + e.getMessage());
+                System.debug('Exception occured while scheduling Breadwinner Regular Sync: ' + e.getMessage());
             }
         }
     }

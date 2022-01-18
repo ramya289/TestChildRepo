@@ -86,7 +86,7 @@ public with sharing class Processor_Billing_Stripe {
         return response;
     }
     public static FetchResponse parseProducts(String responseBody) {
-        Map<String, Product.StripeProduct> stripeIdProducttMap = new Map<String, Product.StripeProduct>();
+        Map<String, Product.StripeProduct> stripeIdProductMap = new Map<String, Product.StripeProduct>();
         FetchResponse response = new FetchResponse();
         try{	
             String responseStr = Processor_Stripe.replaceStripeWords(responseBody);	
@@ -96,7 +96,7 @@ public with sharing class Processor_Billing_Stripe {
                 Boolean hasMoreRecords = responseData.has_more;	
                 String lastProductId = '';
                 for (Product.StripeProduct pro : responseData.data) {
-                    stripeIdProducttMap.put(pro.Id,pro);
+                    stripeIdProductMap.put(pro.Id,pro);
                     lastProductId = pro.id;
                 }
                 if(hasMoreRecords){	
@@ -111,9 +111,9 @@ public with sharing class Processor_Billing_Stripe {
             }
             else if(responseData.data == NULL){
                 Product.StripeProduct product = (Product.StripeProduct) JSON.deserialize(responseStr, Product.StripeProduct.Class);
-                stripeIdProducttMap.put(product.id, product);
+                stripeIdProductMap.put(product.id, product);
             }	
-            response.productMapById = stripeIdProducttMap;
+            response.productMapById = stripeIdProductMap;
         } catch(Exception ex) {
             System.debug('Products Sync failed for while parsing. \n' +ex.getStackTraceString());
             APICallHandler.userInteractionLogPush(true, 'Product Sync', 'ERROR' , 'Products Sync failed for while parsing. \n' +ex.getMessage());
@@ -159,15 +159,15 @@ public with sharing class Processor_Billing_Stripe {
         Map<String, BWP_Product__c> upsertMapByRefId = new Map<String, BWP_Product__c>();
         Map<String, BWP_Product__c> existingSFProductsMap = new Map<String,BWP_Product__c>();
         try {
-            for(BWP_Product__c product : selectorProduct.selectByProcessorId(stripeProductMapById.keySet(), new List<String>())) {
-                BWP_Product__c pro = new BWP_Product__c(id = product.id, Processor_Id__c = product.Processor_Id__c);
-                existingSFProductsMap.put(pro.Processor_Id__c, pro);
+            for(BWP_Product__c product : selectorProduct.selectByProductId(stripeProductMapById.keySet(), new List<String>())) {
+                BWP_Product__c pro = new BWP_Product__c(id = product.id, Product_Id__c = product.Product_Id__c);
+                existingSFProductsMap.put(pro.Product_Id__c, pro);
             }
             
             for (Product.StripeProduct pw : stripeProductMapById.values()) {
                 BWP_Product__c productSf = existingSFProductsMap.get(pw.id) != null ? existingSFProductsMap.get(pw.id) : new BWP_Product__c();
                 productSf = constructStripeProduct(productSf, pw, apc);
-                upsertMapByRefId.put(productSf.Processor_Id__c, productSf);
+                upsertMapByRefId.put(productSf.Product_Id__c, productSf);
             }
 
             System.debug('upsertMapByRefId :::: '+upsertMapByRefId);
@@ -181,11 +181,11 @@ public with sharing class Processor_Billing_Stripe {
     }
     public static void syncPrices(Map<String, Product.StripePrice> stripePriceMapById, BreadwinnerBillingUtil.BillingAppConfig apc){
         Map<String, BWP_Price__c> upsertMapByRefId = new Map<String, BWP_Price__c>();
-        Map<String, BWP_Price__c> existingSFProductsMap = new Map<String,BWP_Price__c>();
+        Map<String, BWP_Price__c> existingSFPricesMap = new Map<String,BWP_Price__c>();
         try {
-            for(BWP_Price__c product : selectorPrice.selectByProcessorId(stripePriceMapById.keySet(), new List<String>())) {
-                BWP_Price__c pro = new BWP_Price__c(id = product.id, Processor_Id__c = product.Processor_Id__c);
-                existingSFProductsMap.put(pro.Processor_Id__c, pro);
+            for(BWP_Price__c price : selectorPrice.selectByPriceId(stripePriceMapById.keySet(), new List<String>())) {
+                BWP_Price__c pro = new BWP_Price__c(id = price.id, Price_Id__c = price.Price_Id__c);
+                existingSFPricesMap.put(pro.Price_Id__c, pro);
             }
 
             Set<String> productIdSet = new Set<String>();
@@ -194,17 +194,17 @@ public with sharing class Processor_Billing_Stripe {
             }
             // Create a map of products
             Map<String, BWP_Product__c> productMapByProcessorProductId = new Map<String, BWP_Product__c>();
-            List<BWP_Product__c> productList = selectorProduct.selectByProcessorId(productIdSet,new List<String>());
+            List<BWP_Product__c> productList = selectorProduct.selectByProductId(productIdSet,new List<String>());
             for (BWP_Product__c product : productList) {
-                productMapByProcessorProductId.put(product.Processor_Id__c, product);
+                productMapByProcessorProductId.put(product.Product_Id__c, product);
             }
             
             for (Product.StripePrice pw : stripePriceMapById.values()) {
-                BWP_Price__c priceSf = existingSFProductsMap.get(pw.id) != null ? existingSFProductsMap.get(pw.id) : new BWP_Price__c();
+                BWP_Price__c priceSf = existingSFPricesMap.get(pw.id) != null ? existingSFPricesMap.get(pw.id) : new BWP_Price__c();
                 BWP_Product__c product = productMapByProcessorProductId.get(pw.product);
                 if(product != NULL) priceSf.Product__c = product.id;
                 priceSf = constructStripePrice(priceSf, pw, apc);
-                upsertMapByRefId.put(priceSf.Processor_Id__c, priceSf);
+                upsertMapByRefId.put(priceSf.Price_Id__c, priceSf);
             }
 
             System.debug('upsertMapByRefId :::: '+upsertMapByRefId);
@@ -219,25 +219,23 @@ public with sharing class Processor_Billing_Stripe {
     private static BWP_Product__c constructStripeProduct(BWP_Product__c productSf, Product.StripeProduct pw, BreadwinnerBillingUtil.BillingAppConfig appC){
         System.debug('PW Wrapper ::: '+pw);
         productSf.Active__c = pw.active;
-        if(pw.created != null) productSf.Created_Date_in_Processor__c = DateTime.newInstance((long)(pw.created) * 1000);
+        if(pw.created != null) productSf.Created_Date_in_Processor__c = getAsDateTime(pw.created);
         productSf.Created_Via__c = BreadwinnerUtil.getCreatedViaValue(appC.appconfig.currentRunningClassContext);
         productSf.Description__c = pw.description;
-        productSf.Name = pw.name;
+        productSf.Name = pw.name.LEFT(80);
         productSf.Product_Name_Full__c = pw.name;
-        productSf.Processor_Id__c = pw.Id;
+        productSf.Product_Id__c = pw.id;
         productSf.Processor_Org_Id__c = appC.appconfig.accountId;
         productSf.Type__c = pw.stripe_type;
-        if(pw.updated != null) productSf.Updated_Date_in_Processor__c = DateTime.newInstance((long)(pw.updated) * 1000);
         return productSf;
     }
     private static BWP_Price__c constructStripePrice(BWP_Price__c priceSf, Product.StripePrice pw, BreadwinnerBillingUtil.BillingAppConfig appC){
         System.debug('PW Wrapper :::: '+pw);
-        priceSf.Processor_Id__c = pw.Id;
+        priceSf.Price_Id__c = pw.id;
         priceSf.Active__c = pw.active;
-        if(pw.created != null) priceSf.Created_Date_in_Processor__c = DateTime.newInstance((long)(pw.created) * 1000);
+        if(pw.created != null) priceSf.Created_Date_in_Processor__c = getAsDateTime(pw.created);
         priceSf.Created_Via__c = BreadwinnerUtil.getCreatedViaValue(appC.appconfig.currentRunningClassContext);
-        priceSf.Currency__c = (pw.stripe_currency).toUpperCase();
-        priceSf.Processor_Id__c = pw.Id;
+        priceSf.Currency__c = (pw.stripe_currency).toUppercase();
         priceSf.Processor_Org_Id__c = appC.appconfig.accountId;
         if(pw.stripe_type != null) priceSf.Type__c = pw.stripe_type;
         if(pw.recurring != NULL){
@@ -246,6 +244,13 @@ public with sharing class Processor_Billing_Stripe {
         }
         if(pw.unit_amount != NULL) priceSf.Unit_Amount__c = pw.unit_amount/100;
         return priceSf;
+    }
+    public static Datetime getAsDateTime(Integer unixTime){
+        DateTime dt;
+        if(unixTime != NULL){
+            dt = DateTime.newInstance((long)(unixTime) * 1000);
+        }
+        return dt;
     }
     private class ProductsResponse {
         public Boolean has_more;

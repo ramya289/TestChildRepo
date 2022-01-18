@@ -92,4 +92,29 @@ public with sharing class BreadwinnerBilling {
         public Long updated                     {get; set;}
         public Datetime updatedDate             {get; set;}
     }
+    // Added these two methods for temporary
+    public void rescheduleRegularSync(){
+        try{
+            if(BreadwinnerUtil.isAdministrator()){
+                BillingRegularSyncBatch.scheduleBreadwinnerRegularSync(1,true);
+                APICallHandler.userInteractionLogPush(FALSE, 'Restarted Regular Sync', 'INFO' , 'Restarted Regular Sync from Breadwinner Billing Page');
+            }
+        }
+        catch(exception e){
+            APICallHandler.userInteractionLogPush(FALSE, 'Restarted Regular Sync', 'ERROR' , 'Error occurred while restarting Regular Sync from Breadwinner Billing Page' +e);
+        }
+    }
+    @AuraEnabled
+    public static void restartHistoricalSync(){
+        try{
+            if(!BreadwinnerUtil.isBatchRunning(BreadwinnerBillingUtil.CNTX_BB_HIST_SYNC)){
+                BillingHistoricalSyncBatch historicalSync = new BillingHistoricalSyncBatch('Product');
+                Database.executeBatch(historicalSync, 1);
+            }
+            APICallHandler.userInteractionLogPush(false, 'Restarted Historical Sync', 'INFO', 'Restarted Historical Sync from Breadwinner Billing Page');
+        }
+        catch(exception e){
+            APICallHandler.userInteractionLogPush(FALSE, 'Restarted Historical Sync', 'ERROR' , 'Error occurred while restarting Historical Sync:: '+e.getMessage());
+        }
+    }
 }

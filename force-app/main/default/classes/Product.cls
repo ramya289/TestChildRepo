@@ -1,15 +1,14 @@
 public class Product {
     public class StripeProduct {
-        public String Id;
+        public String id;
         public Boolean active;
         public Integer created;
         public String description;
         public String name;
         public String stripe_type;
-        public Integer updated;
     }
     public class StripePrice {
-        public String Id;
+        public String id;
         public Boolean active;
         public Integer created;
         public String stripe_currency;

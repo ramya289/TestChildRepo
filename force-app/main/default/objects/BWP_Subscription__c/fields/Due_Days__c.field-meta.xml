@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Hourly_Product_Sync_Last_Run__c</fullName>
+    <fullName>Due_Days__c</fullName>
     <externalId>false</externalId>
-    <label>Hourly Product Sync Last Run</label>
+    <label>Due Days</label>
+    <precision>18</precision>
     <required>false</required>
-    <trackHistory>false</trackHistory>
+    <scale>0</scale>
     <trackTrending>false</trackTrending>
-    <type>DateTime</type>
+    <type>Number</type>
+    <unique>false</unique>
 </CustomField>

@@ -1,8 +1,4 @@
 @isTest
-/*
-* This class is to create data for test classes. It's created for more resuability.
-* All test methods will be here. This is the only the class for all test cases for all classes.
-*/
 public class BillingUnitTests {
 
     @TestVisible

@@ -2,10 +2,13 @@
 public with sharing class BillingHistoricalSyncBatch implements Database.Batchable<BreadwinnerBillingUtil.BillingAppConfig>, Database.AllowsCallouts, Database.Stateful, Schedulable {
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigUpdateList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
     public List<BreadwinnerBillingUtil.BillingAppConfig> appConfigList = new List<BreadwinnerBillingUtil.BillingAppConfig>();
-    @namespaceAccessible public BreadwinnerUtil.AppConfig appConfig = new BreadwinnerUtil.AppConfig();
-    @namespaceAccessible public String runningObjectName;
+    @namespaceAccessible
+    public BreadwinnerUtil.AppConfig appConfig = new BreadwinnerUtil.AppConfig();
+    @namespaceAccessible
+    public String runningObjectName;
     Exception exceptionInExecute;
-    @namespaceAccessible public Boolean runThisSyncOnly;
+    @namespaceAccessible
+    public Boolean runThisSyncOnly;
     public Integer requestRecordsCount;
     public String errors;
 
@@ -18,11 +21,11 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
                 }
             }
         }
-        runningObjectName = String.isNotBlank(objectName) ? objectName : '';
+        runningObjectName = objectName;
         runThisSyncOnly = false;
     }
     
-    //Default Constructor which runs for all connected ORGs.
+    //Constructor which runs for all connected ORGs.
     public BillingHistoricalSyncBatch(String objectName) {
         if(BreadwinnerUtil.getBWSetting().Active__c) {
             for(BWP_Processor_Config__c config : BreadwinnerBillingUtil.processorConfigList) {
@@ -31,11 +34,11 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
                 }
             }
         }
-        runningObjectName = String.isNotBlank(objectName) ? objectName : ''; 
+        runningObjectName = objectName; 
         runThisSyncOnly = false;
     }
 
-    // This constructor can be used to call dynamically from the Payments package
+    //Constructor to call dynamically from the Payments package
     @namespaceAccessible
     public BillingHistoricalSyncBatch(){
         System.debug('Default Constructor');
@@ -55,16 +58,15 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
 
         if(runningObjectName.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT)){
             try {
-                Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
                 if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
                     if(apC.lastProductId != NULL){
                         fetchRequest.starting_after = apC.lastProductId;
                     }
+                    //make max limit to 50 to reduce heap size and DML rows issues.
                     fetchRequest.stripe_limit = '50';
-                }
-                ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchProducts(apc, fetchRequest);
-                if(response.responseJSON != NULL){
-                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchProducts(apc, fetchRequest);
+                    if(response.responseJSON != NULL){
                         processProductResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
@@ -76,16 +78,14 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
         }
         else if(runningObjectName.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRICE)){
             try {
-                Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
                 if(apc.appconfig.paymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    Processor_Stripe.FetchRequest fetchRequest = new Processor_Stripe.FetchRequest();
                     if(apC.lastPriceId != NULL){
                         fetchRequest.starting_after = apC.lastPriceId;
                     }
                     fetchRequest.stripe_limit = '50';
-                }
-                ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchPrices(apc, fetchRequest);
-                if(response.responseJSON != NULL){
-                    if(apc.appconfig.PaymentProcessorType == ProcessorUtil.PAT_STRIPE){
+                    ProcessorUtil.ResponseObject response = Processor_Billing_Stripe.fetchPrices(apc, fetchRequest);
+                    if(response.responseJSON != NULL){
                         processPriceResponse_Stripe(response, apc, requestRecordsCount);
                     }
                 }
@@ -107,7 +107,7 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
             Map<Id,BWP_Processor_Config__c> appConfigMap = new Map<Id,BWP_Processor_Config__c>();
             
             //Collecting all app config records
-            for(BWP_Processor_Config__c ac : BreadwinnerUtil.processorConfigList) {
+            for(BWP_Processor_Config__c ac : BreadwinnerBillingUtil.processorConfigList) {
                 appConfigMap.put(ac.Id, ac);
             }
             
@@ -118,7 +118,7 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
             //List to save app config records to database.
             List<BWP_Processor_Config__c> appConfigNeedToUpdate = new List<BWP_Processor_Config__c>();
             for(BreadwinnerBillingUtil.BillingAppConfig appConfigWrapper : appConfigUpdateList) {
-                Boolean recordExists = ((String.isNotBlank(appConfigWrapper.appconfig.RecordId) && (appConfigWrapper.appconfig.RecordId != NULL)) ? (appConfigMap.containsKey(appConfigWrapper.appconfig.RecordId) ? true : false) : false);
+                Boolean recordExists = appConfigMap.containsKey(appConfigWrapper?.appconfig?.RecordId);
                 BWP_Processor_Config__c appConfigCompleteRecord = recordExists ? appConfigMap.get(appConfigWrapper.appconfig.RecordId) : new BWP_Processor_Config__c();
                 
                 if(runningObjectName.containsIgnoreCase(BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT)){
@@ -174,6 +174,7 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
     /* Schedulable - execute */
     @namespaceAccessible
     public void execute(SchedulableContext sc) {
+        System.debug('appConfig ::: '+appConfig);
         if(BreadwinnerUtil.isAdministrator()) {
             if(BreadwinnerUtil.isBreadwinnerActive()) {
                 CronTrigger ct = Schema.sObjectType.CronTrigger.isAccessible() ? [SELECT Id, CronExpression FROM CronTrigger WHERE Id =: sc.getTriggerId() LIMIT 1] : new CronTrigger();
@@ -193,7 +194,6 @@ public with sharing class BillingHistoricalSyncBatch implements Database.Batchab
     }
 
      /* This method is used to run historical sync batch */
-     @namespaceAccessible
      public static void runHistoricalSyncBatch(String syncName, Boolean runThisSyncOnly, BreadwinnerUtil.AppConfig appConfig){
         String runningSyncName = String.isNotBlank(syncName) ? syncName : BreadwinnerBillingUtil.OBJ_SYNC_PRODUCT;
         try{

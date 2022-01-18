@@ -3,6 +3,7 @@
         <head>
             <meta charset="utf-8" />
             <apex:slds />
+            <apex:includeLightning />
             <script src="{!URLFOR($Resource.Breadwinner_Payments,'Breadwinner_Payments/js/jquery-3.5.1.min.js')}"></script>
             
             <script type="text/javascript">
@@ -240,7 +241,22 @@
                                             <table class=" slds-table slds-max-medium-table_stacked slds-no-row-hover slds-m-top_small">
                                                 <tr>
                                                     <td style="width:12%">
-                                                        <apex:commandButton action="{!fetchProducts}" oncomplete="message();reRenderHeaderSVG();" value="Show Recent Products" styleClass="slds-button slds-button_brand" reRender="products,msgPannel,setupPageContent " status="assign-action-status"/>
+                                                        <apex:commandButton action="{!fetchProducts}" oncomplete="message();reRenderHeaderSVG();" value="Show Recent Products" styleClass="slds-button slds-button_brand slds-m-right_small" reRender="products,msgPannel,setupPageContent " status="assign-action-status"/>
+                                                        <!-- Added these two buttons for temporary -->
+                                                        <apex:commandButton id="restartRegularSync" value="Restart Regular Sync" action="{!rescheduleRegularSync}" status="assign-action-status" styleClass="slds-button slds-button_outline-brand slds-m-right_small" reRender="nothing" style="display:none" />
+                                                        <apex:commandButton id="restartProcessorProductSync" value="Sync Historical Products" action="{!restartHistoricalSync}" status="assign-action-status" styleClass="slds-button slds-button_outline-brand slds-m-right_small" reRender="nothing" style="display:none" />
+                                                        <div id="LightningComponentid" />    
+                                                        <script>
+                                                        $Lightning.use("c:RestartSyncsApp", function() {
+                                                            $Lightning.createComponent("c:restartSyncsCmp",
+                                                            { 
+                                                            },
+                                                            "LightningComponentid",
+                                                            function(cmp) {
+                                                                console.log('LWC Componenet added in VF page');
+                                                            });
+                                                        });
+                                                        </script>
                                                     </td>
                                                 </tr>
                                             </table>

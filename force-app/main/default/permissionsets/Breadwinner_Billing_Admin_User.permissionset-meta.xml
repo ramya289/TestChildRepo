@@ -5,11 +5,7 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>BillingHourlySyncBatch</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>BillingRecordInfoExtension</apexClass>
+        <apexClass>BillingRegularSyncBatch</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
@@ -17,11 +13,11 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>BreadwinnerBilling</apexClass>
+        <apexClass>BreadwinnerBillingUtil</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>BreadwinnerBillingUtil</apexClass>
+        <apexClass>Product</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
@@ -37,15 +33,7 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>Test_BillingHourlySyncBatch</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>Test_BillingRecordInfoExtension</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>Test_BreadwinnerBilling</apexClass>
+        <apexClass>Test_BillingRegularSyncBatch</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <fieldPermissions>
@@ -70,7 +58,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>BWP_Price__c.Processor_Id__c</field>
+        <field>BWP_Price__c.Price_Id__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -105,6 +93,26 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>BWP_Processor_Config__c.Historical_Price_Sync_Last_Run__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>BWP_Processor_Config__c.Historical_Product_Sync_Last_Run__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>BWP_Processor_Config__c.Regular_Price_Sync_Last_Run__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>BWP_Processor_Config__c.Regular_Product_Sync_Last_Run__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>BWP_Product__c.Active__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -125,7 +133,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>BWP_Product__c.Processor_Id__c</field>
+        <field>BWP_Product__c.Product_Id__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -143,13 +151,8 @@
         <field>BWP_Product__c.Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>BWP_Product__c.Updated_Date_in_Processor__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
-    <label>Breadwinner Billing</label>
+    <label>Breadwinner Billing Admin User</label>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>
@@ -165,15 +168,16 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
+        <object>BWP_Processor_Config__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
         <object>BWP_Product__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
-    <pageAccesses>
-        <apexPage>BreadwinnerBilling</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
-    <pageAccesses>
-        <apexPage>ProductRecordInfo</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
 </PermissionSet>
